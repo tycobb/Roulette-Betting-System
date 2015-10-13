@@ -1,0 +1,95 @@
+__author__ = 'Michael Petryszyn'
+
+import numpy as np
+from random import randint
+
+
+def builddictionary():
+    d = {}
+    d[0] = '00'
+
+    for i in range(37):
+        d[i+1] = i
+
+    return d
+
+
+def winningnumbers():
+
+    win = []
+    for i in range(1,35,3):
+        win.append(i)
+
+    return win
+
+
+def bankroll():
+
+    simresult = []
+
+    for i in range(10000):
+        if i % 1000 == 0: print('Simulator Run # {}'.format(i))
+        balance = 10000
+        minbet = 5
+        maxbet = 1000
+
+        bet = minbet
+
+
+        bal, cnt, maxb = play(balance, minbet, bet, maxbet,0,0)
+        l = []
+        l.append(bal)
+        l.append(cnt)
+        l.append(maxb)
+
+        simresult.append(l)
+
+    x = np.array(simresult)
+
+    print('starting bal: {}\nminbet: {}\nmaxbet: {}\n'.format(balance, minbet, maxbet))
+
+
+    print('Max Profit: {}'.format(max(x[:,0])- balance))
+    print('Max Spin: {}'.format(max(x[:,1])))
+    print('Max Bet: {}'.format(max(x[:,2])))
+    # print('\n')
+    print('Min Ending Balance: {}'.format(min(x[:,0]) - balance))
+    print('Min Spin: {}'.format(min(x[:,1])))
+    print('Min MaxBet: {}'.format(min(x[:,2])))
+    # print('\n')
+    print('Mean Return: {}'.format(np.mean(x[:,0]) - balance))
+    print('Mean Spin: {}'.format(max(x[:,1])))
+    print('Mean MaxBet: {}'.format(max(x[:,2])))
+
+def play(bal, minbet, bet, maxbet,cnt, totalmaxbet):
+
+    if totalmaxbet < bet: totalmaxbet = bet
+
+    if bal < 0:
+        return (bal,cnt, totalmaxbet)
+    elif bet > bal:
+        bet = bal
+    elif bet > maxbet:
+        bet = maxbet
+    elif cnt > 950:
+        return (bal, cnt, totalmaxbet)
+
+    roll = builddictionary()
+    spin = randint(0,37)
+
+    result = roll[spin]
+    winners = winningnumbers()
+
+    if result in winners:
+        bal += bet*3
+        cnt += 1
+        bet = minbet
+        return play(bal, minbet, bet, maxbet, cnt, totalmaxbet)
+    else:
+        bal -= bet
+        cnt += 1
+        bet = bet*2
+        return play(bal, minbet, bet, maxbet, cnt, totalmaxbet)
+
+bankroll()
+
