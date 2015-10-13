@@ -19,9 +19,9 @@ Winning: +480 = 160 * 3
 Losses:  -315  = 5 + 10 + 20  + 40 + 80 + 160
 Total: +165
 
-I must have messed up because I am getting postive returns....which has to be impossible.
+I must have messed up because I am getting postive return which has to be impossible.
 
-Below are my results for 10,000 simulations. For some reaosn Python doesn't let me use a recusive function more than 1000 so I manually stop it after 950 "spins".
+Below are my results for 10,000 simulations. For some reason Python doesn't let me use a recusive function more than 1000 so I manually stop it after 950 "spins".
 
 starting bal: 10000
 minbet: 5
