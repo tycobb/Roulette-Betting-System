@@ -1,0 +1,125 @@
+#-------------------------------------------------------------------------------
+# Name:        roulette script
+# Purpose:
+#
+# Author:      Sean Sissman
+#
+#-------------------------------------------------------------------------------
+from random import randint
+
+line_to_play = range(1,35,3) #+ range(2,36,3)  #range(3,37,3)
+
+#line_to_play = range(1,37,2)
+min_bet = 5
+max_bet = 1000
+original_bankroll = 10000
+bankroll = 10000
+wheel = range(38)
+win_counter = 0
+loss_counter = 0
+positive_profit_count = 0
+negative_profit_count = 0
+total_winnings = 0
+total_loss = 0
+spin_counter = 0
+
+
+def place_bet(previous_spin_result, previous_bet):
+  """If previous spin lost, return double bet up to max_bet, else return min_bet"""
+  if not previous_spin_result:
+    bet = previous_bet * 2
+    if bet > max_bet:
+      bet = max_bet
+    if bet >= bankroll:
+      bet = bankroll
+    if bet < min_bet:
+      bet = 0
+  else:
+    bet = min_bet
+  return bet
+
+def spin():
+  """Returns True if winner, False if loser"""
+  if randint(0,37) in line_to_play:
+    return True
+  else:
+    return False
+
+def payout(spin_result, bet):
+  """Returns the amount won"""
+  if spin_result:
+    return bet * 3
+  else:
+    return 0
+
+##def update_roll(amount):
+##  bankroll = bankroll + amount
+##  if bankroll
+
+
+def play(previous_spin_result=True, previous_bet=min_bet):
+  global bankroll, win_counter, loss_counter, spin_counter, positive_profit_count, negative_profit_count, total_loss, total_winnings
+  for s in range(10000):
+    bankroll = 10000
+    win_counter = 0
+    loss_counter = 0
+    for i in range(1000):
+##      print "\n----------------------------------------------"
+##      print "Bankroll\t\t|\t\t" + str(bankroll)
+      bet = place_bet(previous_spin_result, previous_bet)
+      if bet > 0:
+        bankroll = bankroll - bet
+      else:             # busted out - can no longer bet
+##        print "You broke as a joke."
+        break
+      previous_bet = bet
+
+      spin_result = spin()
+      spin_counter+=1
+      if spin_result:
+        win_counter+=1
+      else:
+        loss_counter+=1
+      previous_spin_result = spin_result
+
+      winnings = payout(spin_result, bet)
+      bankroll = bankroll + winnings
+
+  ##    print "Bet\t\t\t\t|\t\t" + str(bet)
+  ##    print "Spin result\t\t|\t\t" + str(spin_result)
+  ##    print "Winnings\t\t|\t\t" + str(winnings)
+  ##    print "Bankroll\t\t|\t\t" + str(bankroll)
+  ##  print "----------------------------------------------"
+  ##  print "TOTAL WINS\t\t|\t\t" + str(win_counter)
+  ##  print "TOTAL LOSSES\t|\t\t" + str(loss_counter)
+    win_percentage = float(win_counter) / (float(win_counter) + float(loss_counter))
+##    print "----------------------------------------------"
+##    print "PERCENTAGE WINS\t|\t\t" + str(win_percentage)
+    profit = bankroll - original_bankroll
+    profit_return = float(profit) / float(original_bankroll)
+##    print "PROFIT\t\t\t|\t\t $" + str(profit) + " or " + str(profit_return*100) + "%"
+    if profit > 0:
+      positive_profit_count+=1
+      total_winnings = total_winnings + profit
+    else:
+      negative_profit_count+=1
+      total_loss = total_loss + profit
+  print "Number of times winning a profit:  " + str(positive_profit_count)
+  print "Number of times losing money:  " + str(negative_profit_count)
+  print "Total won from positive rounds:  " + str(total_winnings)
+  print "Total lost from negative rounds:  " + str(total_loss)
+  print "Overall money won/lost:  " + str(total_winnings+total_loss)
+
+
+
+
+
+
+
+def main():
+    play()
+
+
+
+if __name__ == '__main__':
+    main()
