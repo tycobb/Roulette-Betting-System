@@ -1,4 +1,4 @@
-__author__ = 'Michael Petryszyn'
+__author__ = 'Main Desktop'
 
 import numpy as np
 from random import randint
@@ -27,6 +27,14 @@ def bankroll():
 
     simresult = []
 
+    possiblenumbers = builddictionary()
+
+    winners = winningnumbers()
+
+    # print(possiblenumbers)
+
+    # assert 1 == 0
+
     for i in range(10000):
         if i % 1000 == 0: print('Simulator Run # {}'.format(i))
         balance = 10000
@@ -36,60 +44,98 @@ def bankroll():
         bet = minbet
 
 
-        bal, cnt, maxb = play(balance, minbet, bet, maxbet,0,0)
+        bal, cntwinner, cntloser, maxb = play(winners,possiblenumbers, balance, minbet, bet, maxbet,0,0,0)
+
         l = []
         l.append(bal)
-        l.append(cnt)
+        l.append(cntwinner)
+        l.append(cntloser)
+        l.append(cntwinner/(cntwinner+cntloser))
         l.append(maxb)
 
         simresult.append(l)
 
+    np.set_printoptions(precision=3,suppress=True)
     x = np.array(simresult)
+
+    # print(x)
 
     print('starting bal: {}\nminbet: {}\nmaxbet: {}\n'.format(balance, minbet, maxbet))
 
 
-    print('Max Profit: {}'.format(max(x[:,0])- balance))
-    print('Max Spin: {}'.format(max(x[:,1])))
-    print('Max Bet: {}'.format(max(x[:,2])))
+    print('Max Ending Balance: {}'.format(max(x[:,0])))
+    print('Max Spin: {}'.format(max(x[:,1]+x[:,2])))
+    print('Max Bet: {}'.format(max(x[:,4])))
     # print('\n')
-    print('Min Ending Balance: {}'.format(min(x[:,0]) - balance))
-    print('Min Spin: {}'.format(min(x[:,1])))
-    print('Min MaxBet: {}'.format(min(x[:,2])))
+    print('Min Ending Balance: {}'.format(min(x[:,0])))
+    print('Min Spin: {}'.format(min(x[:,1]+x[:,2])))
+    print('Min MaxBet: {}'.format(min(x[:,4])))
     # print('\n')
-    print('Mean Return: {}'.format(np.mean(x[:,0]) - balance))
-    print('Mean Spin: {}'.format(max(x[:,1])))
-    print('Mean MaxBet: {}'.format(max(x[:,2])))
+    print('Mean Return: {:.2%}'.format(((np.mean(x[:,0]) - balance)/balance)))
+    print('Mean Spin: {}'.format(np.mean(x[:,1]+x[:,2])))
+    print('Mean MaxBet: {}'.format(np.mean(x[:,4])))
 
-def play(bal, minbet, bet, maxbet,cnt, totalmaxbet):
 
+def play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet):
+
+    # print(bal, bet, cntwinner, cntloser, totalmaxbet)
+
+    if bet > maxbet: bet = maxbet
     if totalmaxbet < bet: totalmaxbet = bet
+    if bal <= 0: return (bal, cntwinner, cntloser, totalmaxbet)
+    if bet > bal: bet = bal
+    
+    
+    if cntwinner + cntloser > 950: return (bal, cntwinner, cntloser, totalmaxbet)
 
-    if bal < 0:
-        return (bal,cnt, totalmaxbet)
-    elif bet > bal:
-        bet = bal
-    elif bet > maxbet:
-        bet = maxbet
-    elif cnt > 950:
-        return (bal, cnt, totalmaxbet)
-
-    roll = builddictionary()
     spin = randint(0,37)
 
-    result = roll[spin]
-    winners = winningnumbers()
+    result = possiblenumbers[spin]
+
+    # print(bal, bet, cntwinner, cntloser, totalmaxbet)
 
     if result in winners:
-        bal += bet*3
-        cnt += 1
+        bal += bet*2
+        # print(bal, bet, maxbet,'W')
+        cntwinner += 1
         bet = minbet
-        return play(bal, minbet, bet, maxbet, cnt, totalmaxbet)
+        return play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet)
     else:
         bal -= bet
-        cnt += 1
-        bet = bet*2
-        return play(bal, minbet, bet, maxbet, cnt, totalmaxbet)
+        # print(bal, bet, maxbet,'L')
+        cntloser += 1
+        bet *= 2
+        return play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet)
 
-bankroll()
+
+def place_bet(**d):
+    # This will set the bet size
+
+    # If the bal is less then zero the session is over.
+    if bal <= 0: return (bal, cntwinner, cntloser, totalmaxbet)
+
+    # Makes sure the bet isn't larger than the table max limit. If so change the bet size to the limit
+    if bet > maxbet: bet = maxbet
+
+    # This will keep track of the largest bet for each session.
+    if totalmaxbet < bet: totalmaxbet = bet
+
+    # This will make the bet the remaining balance if the Balance is less than the mininum bet.
+    if bet > bal: bet = bal
+    
+
+
+
+def main():
+    import time
+
+    start = time.time()
+
+    bankroll()
+
+    print('Script ran in {:.5f} seconds'.format(time.time()-start))
+
+
+if __name__ == '__main__': main()
+
 
