@@ -29,7 +29,7 @@ def play(d):
 
     # print(d['bankroll'], d['bet'])
     # This is to stop the session. Python has a limit of ~1000 stacks
-    if d['totalwins'] + d['totallosses'] > 1000:
+    if d['totalwins'] + d['totallosses'] > 14:
         d['playing'] = 0
         return d
 
@@ -92,7 +92,7 @@ def place_bet(d):
     return d
 
 
-def sitdownatthetable():
+def sitdownatthetable(loops):
 
     # Dictionary that will be holding all the variables...
 
@@ -110,7 +110,8 @@ def sitdownatthetable():
 
     session = []
 
-    for x in range(100):
+
+    for x in range(loops):
         if x % 1000 == 0: print('Simulator Run # {}'.format(x))
 
         # Used to tell if you will continue to play 1 = TRUE; 0 = FALSE
@@ -145,10 +146,11 @@ def sitdownatthetable():
     print('\n{}'.format(df[['bankroll','beststreak','totalwins','totallosses','spins','beststreak','worststreak',
                             'maxbet','winningpercent']].describe()))
 
+    print('\nPercent you dont win in the first 15 spins {:.5%}'.format(df[df['totalwins'] == 0].count()['spins']/loops))
 
 def main():
 
-    sitdownatthetable()
+    sitdownatthetable(100000)
 
 
 if __name__ == '__main__':
