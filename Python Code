@@ -1,7 +1,9 @@
 __author__ = 'Main Desktop'
-
 import numpy as np
 from random import randint
+import time
+from copy import deepcopy
+import pandas as pd
 
 
 def builddictionary():
@@ -23,119 +25,138 @@ def winningnumbers():
     return win
 
 
-def bankroll():
+def play(d):
 
-    simresult = []
-
-    possiblenumbers = builddictionary()
-
-    winners = winningnumbers()
-
-    # print(possiblenumbers)
-
-    # assert 1 == 0
-
-    for i in range(10000):
-        if i % 1000 == 0: print('Simulator Run # {}'.format(i))
-        balance = 10000
-        minbet = 5
-        maxbet = 1000
-
-        bet = minbet
-
-
-        bal, cntwinner, cntloser, maxb = play(winners,possiblenumbers, balance, minbet, bet, maxbet,0,0,0)
-
-        l = []
-        l.append(bal)
-        l.append(cntwinner)
-        l.append(cntloser)
-        l.append(cntwinner/(cntwinner+cntloser))
-        l.append(maxb)
-
-        simresult.append(l)
-
-    np.set_printoptions(precision=3,suppress=True)
-    x = np.array(simresult)
-
-    # print(x)
-
-    print('starting bal: {}\nminbet: {}\nmaxbet: {}\n'.format(balance, minbet, maxbet))
-
-
-    print('Max Ending Balance: {}'.format(max(x[:,0])))
-    print('Max Spin: {}'.format(max(x[:,1]+x[:,2])))
-    print('Max Bet: {}'.format(max(x[:,4])))
-    # print('\n')
-    print('Min Ending Balance: {}'.format(min(x[:,0])))
-    print('Min Spin: {}'.format(min(x[:,1]+x[:,2])))
-    print('Min MaxBet: {}'.format(min(x[:,4])))
-    # print('\n')
-    print('Mean Return: {:.2%}'.format(((np.mean(x[:,0]) - balance)/balance)))
-    print('Mean Spin: {}'.format(np.mean(x[:,1]+x[:,2])))
-    print('Mean MaxBet: {}'.format(np.mean(x[:,4])))
-
-
-def play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet):
-
-    # print(bal, bet, cntwinner, cntloser, totalmaxbet)
-
-    if bet > maxbet: bet = maxbet
-    if totalmaxbet < bet: totalmaxbet = bet
-    if bal <= 0: return (bal, cntwinner, cntloser, totalmaxbet)
-    if bet > bal: bet = bal
-    
-    
-    if cntwinner + cntloser > 950: return (bal, cntwinner, cntloser, totalmaxbet)
+    # print(d['bankroll'], d['bet'])
+    # This is to stop the session. Python has a limit of ~1000 stacks
+    if d['totalwins'] + d['totallosses'] > 1000:
+        d['playing'] = 0
+        return d
 
     spin = randint(0,37)
 
-    result = possiblenumbers[spin]
+    result = d['table'][spin]
 
-    # print(bal, bet, cntwinner, cntloser, totalmaxbet)
+    d['spins'] += 1
 
-    if result in winners:
-        bal += bet*2
-        # print(bal, bet, maxbet,'W')
-        cntwinner += 1
-        bet = minbet
-        return play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet)
+    if result in d['winners']:
+        d['bankroll'] += d['bet']*3
+        d['bet'] = d['minlimit']
+        d['totalwins'] += 1
+
+        if d['lastresult'] == 'won' or d['lastresult'] == 0:
+            d['streak'] += 1
+        elif d['lastresult'] == 'loss':
+            d['streak'] = 1
+
+        if d['beststreak'] < d['streak']: d['beststreak'] = d['streak']
+
+        d['lastresult'] = 'won'
+
     else:
-        bal -= bet
-        # print(bal, bet, maxbet,'L')
-        cntloser += 1
-        bet *= 2
-        return play(winners, possiblenumbers, bal, minbet, bet, maxbet, cntwinner, cntloser, totalmaxbet)
+        d['totallosses'] += 1
+
+        d['bet'] *= 2
+
+        if d['lastresult'] == 'won': d['streak'] = 1
+        elif d['lastresult'] == 'loss' or d['lastresult'] == 0: d['streak'] += 1
+
+        if d['worststreak'] < d['streak']: d['worststreak'] = d['streak']
+
+        d['lastresult'] = 'loss'
+
+    return d
 
 
-def place_bet(**d):
+def place_bet(d):
+
     # This will set the bet size
 
     # If the bal is less then zero the session is over.
-    if bal <= 0: return (bal, cntwinner, cntloser, totalmaxbet)
+    if d['bankroll'] <= 0:
+        d['playing'] = 0
+        return d
 
     # Makes sure the bet isn't larger than the table max limit. If so change the bet size to the limit
-    if bet > maxbet: bet = maxbet
+    if d['bet'] > d['maxlimit']: d['bet'] = d['maxlimit']
 
     # This will keep track of the largest bet for each session.
-    if totalmaxbet < bet: totalmaxbet = bet
+    if d['maxbet'] < d['bet']: d['maxbet'] = d['bet']
 
     # This will make the bet the remaining balance if the Balance is less than the mininum bet.
-    if bet > bal: bet = bal
-    
+    if d['bet'] > d['bankroll']: d['bet'] = d['bankroll']
 
+    d['bankroll'] -= d['bet']
+
+    # print(d['bet'])
+    return d
+
+
+def sitdownatthetable():
+
+    # Dictionary that will be holding all the variables...
+
+    d = {}
+
+    # The possible numbers that you can pick
+
+    d['table'] = builddictionary()
+
+    d['winners'] = winningnumbers()
+
+    # Table rules
+    d['minlimit'] = 5
+    d['maxlimit'] = 1000
+
+    session = []
+
+    for x in range(100):
+        if x % 1000 == 0: print('Simulator Run # {}'.format(x))
+
+        # Used to tell if you will continue to play 1 = TRUE; 0 = FALSE
+        d['playing'] = 1
+
+        # Starting from the beginning
+        d['bet'] = d['minlimit']
+        d['bankroll'] = 10000
+        d['maxbet'] = 0
+        d['totalwins'] = 0
+        d['totallosses'] = 0
+        d['beststreak'] = 0
+        d['worststreak'] = 0
+        d['streak'] = 0
+        d['lastresult'] = 0
+        d['spins'] = 0
+
+        for i in range(1000):
+            place_bet(d)
+            if not d['playing'] == 0:
+                play(d)
+            else:
+                break
+
+        session.append(deepcopy(d))
+
+
+    df = pd.DataFrame(session)
+
+    df['winningpercent'] = df['totalwins']/ (df['spins'])
+
+    print('\n{}'.format(df[['bankroll','beststreak','totalwins','totallosses','spins','beststreak','worststreak',
+                            'maxbet','winningpercent']].describe()))
 
 
 def main():
-    import time
+
+    sitdownatthetable()
+
+
+if __name__ == '__main__':
 
     start = time.time()
 
-    bankroll()
+    main()
 
-    print('Script ran in {:.5f} seconds'.format(time.time()-start))
-
-
-if __name__ == '__main__': main()
+    print('\nScript ran in {:.5f} seconds'.format(time.time()-start))
 
 
